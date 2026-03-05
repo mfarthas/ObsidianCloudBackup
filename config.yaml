@@ -1,0 +1,14 @@
+db_path: "backup.db"
+
+s3:
+  region: "us-east-1"
+  endpoint_url: "http://localhost:9000"
+
+backup:
+  ignore_patterns:
+    - "*.tmp"
+    - ".trash/**"
+    - ".obsidian/**"
+
+retention:
+  keep_last: 2
