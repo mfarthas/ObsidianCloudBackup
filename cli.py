@@ -60,7 +60,12 @@ def cmd_backup(args, config):
                     progress.advance(task)
 
             finalize_snapshot(conn, snapshot_id)
-            console.print(f"\n[green]✓ Backup complete[/green] — snapshot [bold]{snapshot_id}[/bold] | [bold]{new_blobs}[/bold] uploaded, [bold]{skipped}[/bold] deduplicated")
+
+            with open(config.db_path, "rb") as f:
+                s3.upload_blob("metadata/backup.db", f.read())
+            logger.info("Metadata database backed up to S3")
+
+            console.print(f"\n[green]Backup complete[/green] — snapshot [bold]{snapshot_id}[/bold] | [bold]{new_blobs}[/bold] uploaded, [bold]{skipped}[/bold] deduplicated")
 
         except Exception as e:
             logger.error(f"Backup failed: {e}")
@@ -126,7 +131,7 @@ def cmd_restore(args, config):
 
                 progress.advance(task)
 
-        console.print(f"\n[green]✓ Restore complete[/green] — [bold]{restored}[/bold] restored, [bold]{failed}[/bold] failed")
+        console.print(f"\n[green]Restore complete[/green] — [bold]{restored}[/bold] restored, [bold]{failed}[/bold] failed")
 
 
 def cmd_list(args, config):
@@ -222,9 +227,9 @@ def cmd_verify(args, config):
                 progress.advance(task)
 
         if missing == 0 and corrupted == 0:
-            console.print(f"\n[green]✓ Verification passed[/green] — [bold]{ok}/{len(files)}[/bold] blobs intact")
+            console.print(f"\n[green]Verification passed[/green] — [bold]{ok}/{len(files)}[/bold] blobs intact")
         else:
-            console.print(f"\n[red]✗ Verification failed[/red] — {ok} ok, {missing} missing, {corrupted} corrupted")
+            console.print(f"\n[red]Verification failed[/red] — {ok} ok, {missing} missing, {corrupted} corrupted")
 
 
 def cmd_prune(args, config):
@@ -268,7 +273,15 @@ def cmd_prune(args, config):
             except Exception as e:
                 logger.error(f"Failed to delete blob {blob_hash[:8]}: {e}")
 
-        console.print(f"[green]✓ Pruning complete[/green] — [bold]{len(to_delete)}[/bold] snapshots removed, [bold]{deleted_blobs}[/bold] orphaned blobs deleted")
+        console.print(f"[green]Pruning complete[/green] — [bold]{len(to_delete)}[/bold] snapshots removed, [bold]{deleted_blobs}[/bold] orphaned blobs deleted")
+
+def cmd_recover_db(args, config):
+    from core.storage import S3Client
+    s3 = S3Client(config.s3)
+    data = s3.download_blob("metadata/backup.db")
+    with open(config.db_path, "wb") as f:
+        f.write(data)
+    console.print("[green]Database recovered from S3[/green]")
 
 
 def main():
@@ -284,6 +297,7 @@ def main():
 
     subparsers = parser.add_subparsers(dest="command")
     subparsers.add_parser("run", help="Create a new backup snapshot")
+    subparsers.add_parser("recover-db", help="Restore metadata database from S3")
 
     restore_p = subparsers.add_parser("restore", help="Restore from a snapshot")
     restore_p.add_argument("--snapshot", default=None, help="Snapshot ID (default: latest)")
@@ -315,6 +329,7 @@ def main():
         "list": cmd_list,
         "verify": cmd_verify,
         "prune": cmd_prune,
+        "recover-db": cmd_recover_db,
     }
     dispatch[args.command](args, config)
 

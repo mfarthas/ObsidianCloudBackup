@@ -231,6 +231,15 @@ const phases = [
           { name: "Console instance", desc: "A single shared Console() instance is used throughout cli.py. This ensures rich output and logging output don't interleave or corrupt each other during progress bar rendering." },
         ]
       },
+      {
+        name: "cmd_backup — DB backup",
+        type: "Metadata Safety",
+        methods: [
+          { name: "Metadata backup to S3", desc: "After every successful backup run, backup.db is uploaded to S3 under the key metadata/backup.db. This resolves the known limitation of local-only metadata — if the local database is lost, it can be recovered from S3 before running a restore." },
+          { name: "cmd_recover_db(args, config)", desc: "Downloads metadata/backup.db from S3 and writes it to the local db_path. Run this first if backup.db is ever lost. Once recovered, all snapshots and file records are available and restore can proceed normally." },
+          { name: "S3 bucket layout", desc: "Both blobs and metadata live in the same bucket under separate prefixes: blobs/<hash> for encrypted file content, metadata/backup.db for the SQLite database. S3 prefixes act as logical namespaces with no collision risk." },
+        ]
+      },
     ]
   },
 ];
