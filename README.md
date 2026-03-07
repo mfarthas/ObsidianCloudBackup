@@ -1,6 +1,6 @@
 # ObsidianCloudBackup
 
-An encrypted command-line backup system for local vaults. Files are encrypted on your machine with AES-256-GCM before they leave disk — the cloud provider holds only opaque ciphertext. Works with AWS S3 and self-hosted MinIO.
+An encrypted command-line backup system for local vaults. Files are encrypted on your machine with AES-256-GCM before they leave disk, the cloud provider holds only opaque ciphertext. Works with AWS S3 and self-hosted MinIO.
 
 ---
 
@@ -110,7 +110,7 @@ AWS_ACCESS_KEY_ID=your_username
 AWS_SECRET_ACCESS_KEY=your_password
 ```
 
-> **S3 bucket layout:** blobs are stored under `blobs/<hash>` and the metadata database under `metadata/backup.db` — both in the same bucket, separate prefixes.
+> **S3 bucket layout:** blobs are stored under `blobs/<hash>` and the metadata database under `metadata/backup.db`
 
 ---
 
@@ -155,7 +155,7 @@ list --all           # Include failed and pending snapshots in listing
 1. Scans your vault recursively, applying ignore patterns
 2. Computes a SHA-256 hash for each file
 3. Skips upload if the hash already exists in S3 (deduplication)
-4. Encrypts new files with AES-256-GCM in memory — plaintext never touches the network
+4. Encrypts new files with AES-256-GCM in memory 
 5. Uploads encrypted blobs to S3 under their hash as the filename
 6. Records everything in a local SQLite database
 7. Marks the snapshot complete atomically at the end
@@ -176,9 +176,7 @@ Downloads and decrypts every blob for a snapshot without writing anything to dis
 ## Security Model
 
 - All encryption happens locally before upload
-- The cloud provider holds only ciphertext — it cannot read your data
-- The encryption key lives only in your environment — never in config files or committed code
-- AES-256-GCM provides both confidentiality and authenticity
+- The cloud provider holds only ciphertext
 - Each file is encrypted with a fresh random nonce
 
 **Metadata backup:** After every successful backup run, `backup.db` is automatically uploaded to S3 under `metadata/backup.db`. If the local database is ever lost, recover it with:
